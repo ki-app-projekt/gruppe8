@@ -886,6 +886,7 @@ function startMusicForLevel(index) {
   }
 
   stopMusic();
+  stopMenuMusic();
 
   const level = index + 1;
   const drama = level / LEVEL_COUNT;
@@ -936,6 +937,80 @@ function startMusicForLevel(index) {
 
     musicBeat++;
   }, tempo);
+}
+
+/* ---- Fröhliche Menü-Musik + Sound-Effekte (synthetisch) ---- */
+let menuMusicTimer = null;
+let menuBeat = 0;
+
+function stopMenuMusic() {
+  if (menuMusicTimer) clearInterval(menuMusicTimer);
+  menuMusicTimer = null;
+}
+
+function startMenuMusic() {
+  initAudio();
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  if (menuMusicTimer) return;
+  stopMusic();
+  menuBeat = 0;
+
+  const rootNote = 261.63; // C4 – fröhliches Dur
+  const chordRoots = [0, 5, 7, 5];
+  const major = [0, 4, 7, 12];
+
+  menuMusicTimer = setInterval(() => {
+    if (state !== "menu") return;
+
+    const chord = chordRoots[Math.floor(menuBeat / 4) % chordRoots.length];
+    const base = rootNote * Math.pow(2, chord / 12);
+
+    if (menuBeat % 2 === 0) tone(base / 2, 0.16, "triangle", 0.10);
+
+    for (let i = 0; i < major.length; i++) {
+      tone(base * Math.pow(2, major[i] / 12), 0.30, "sine", 0.028 / (i + 1), i * 0.01);
+    }
+
+    const mel = [0, 4, 7, 12, 7, 4][menuBeat % 6];
+    tone(base * Math.pow(2, (mel + 12) / 12), 0.18, "triangle", 0.06);
+
+    if (menuBeat % 4 === 2) tone(base * Math.pow(2, 19 / 12), 0.10, "square", 0.02);
+
+    menuBeat++;
+  }, 300);
+}
+
+function sfxCheckpoint() {            // fröhlicher Aufstieg (Flagge erreicht)
+  tone(523.25, 0.12, "triangle", 0.20, 0.00);
+  tone(659.25, 0.12, "triangle", 0.20, 0.10);
+  tone(783.99, 0.18, "triangle", 0.22, 0.20);
+}
+
+function sfxPower() {                 // "Blopp" (Superpower aktiviert)
+  tone(170, 0.10, "sine", 0.24, 0.00);
+  tone(540, 0.12, "sine", 0.20, 0.06);
+}
+
+function sfxLife() {                  // Extra-Leben Jingle
+  tone(659.25, 0.10, "square", 0.16, 0.00);
+  tone(880.00, 0.10, "square", 0.16, 0.09);
+  tone(1174.66, 0.20, "square", 0.18, 0.18);
+}
+
+function sfxShoot() {                 // "Peow" (Schuss)
+  if (!audioCtx || !masterGain) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(1300, now);
+  osc.frequency.exponentialRampToValueAtTime(220, now + 0.16);
+  g.gain.setValueAtTime(0.20, now);
+  g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+  osc.connect(g);
+  g.connect(masterGain);
+  osc.start(now);
+  osc.stop(now + 0.2);
 }
 
 /* Touchbuttons */
@@ -1482,6 +1557,7 @@ function showMenu() {
   coinHud.style.display = "none";
   stopMusic();
   renderMenu();
+  startMenuMusic(); // fröhliche Menü-Musik
 }
 
 function showResult(title, text) {
@@ -1498,6 +1574,7 @@ function showResult(title, text) {
   nextLevelBtn.textContent = nextLevelBtn.disabled ? "Spiel beendet" : "Nächstes Level";
 
   stopMusic();
+  stopMenuMusic();
 }
 
 function startLevel(index) {
@@ -1770,6 +1847,7 @@ function updateCheckpoints() {
         x: cp.x,
         y: cp.y + cp.h - player.h
       };
+      sfxCheckpoint(); // fröhlicher Ton bei Flagge
     }
   }
 }
@@ -1779,6 +1857,7 @@ function updatePowerups() {
     if (!p.collected && overlap(playerRect(), p)) {
       p.collected = true;
       givePower(p.type, 15000);
+      sfxPower(); // "Blopp"
     }
   }
 
@@ -1786,6 +1865,7 @@ function updatePowerups() {
     if (!l.collected && overlap(playerRect(), l)) {
       l.collected = true;
       lives = Math.min(MAX_LIVES, lives + 1);
+      sfxLife(); // Extra-Leben Sound
     }
   }
 }
@@ -1834,6 +1914,7 @@ function shoot() {
   });
 
   shootCooldown = 210;
+  sfxShoot(); // "Peow"
 }
 
 function updateBullets(dt) {
@@ -2550,9 +2631,15 @@ function drawWorld() {
 
   const center = cameraX + visibleW / 2;
   const amount = clamp((center - currentLevel.width * 0.42) / (currentLevel.width * 0.3), 0, 1);
-  const darkness = currentLevel.levelNumber <= 10 ? 0.22 : currentLevel.levelNumber <= 15 ? 0.28 : 0.38;
 
-  ctx.fillStyle = `rgba(4,8,30,${amount * darkness})`;
+  // Düsterer & mysteriöser mit steigendem Level: Level 1 hell/freundlich,
+  // Level 20 deutlich dunkel. Grund-Dunkelheit wächst mit dem Level, dazu
+  // ein zusätzlicher Schatten gegen Level-Ende.
+  const lvlT = clamp((currentLevel.levelNumber - 1) / (LEVEL_COUNT - 1), 0, 1);
+  const baseDark = 0.08 + lvlT * 0.42;
+  const endDark = (0.16 + lvlT * 0.22) * amount;
+
+  ctx.fillStyle = `rgba(4,6,22,${Math.min(0.78, baseDark + endDark)})`;
   ctx.fillRect(0, 0, visibleW, WORLD_H);
 
   const vignette = ctx.createRadialGradient(
@@ -2565,7 +2652,7 @@ function drawWorld() {
   );
 
   vignette.addColorStop(0, "rgba(0,0,0,0)");
-  vignette.addColorStop(1, "rgba(0,0,0,0.18)");
+  vignette.addColorStop(1, `rgba(0,0,0,${(0.18 + lvlT * 0.34).toFixed(3)})`);
 
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, visibleW, WORLD_H);
