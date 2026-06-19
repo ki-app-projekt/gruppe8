@@ -2,15 +2,19 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#05070c" />
 <title>Jump & Run Deluxe</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#05070c;touch-action:none;overscroll-behavior:none}
-#game{position:fixed;inset:0;width:100vw;height:100vh;display:block;background:#75d8ff;touch-action:none}
+#game{position:fixed;top:0;left:0;width:100vw;height:100vh;height:100dvh;display:block;background:#75d8ff;touch-action:none}
 .card canvas{position:static;inset:auto;background:transparent}
 button,input{font-family:inherit}
-button{border:0;border-radius:12px;padding:9px 13px;font-weight:700;cursor:pointer;color:#171717;background:linear-gradient(#fff176,#ffb300);box-shadow:0 4px 0 rgba(0,0,0,.3)}
+button{border:0;border-radius:12px;padding:9px 13px;font-weight:700;cursor:pointer;color:#171717;background:linear-gradient(#fff176,#ffb300);box-shadow:0 4px 0 rgba(0,0,0,.3);touch-action:manipulation;-webkit-user-select:none;user-select:none}
 button:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
 button:disabled{opacity:.5;cursor:not-allowed}
 input[type=password]{width:130px;text-align:center;padding:9px;border:0;border-radius:10px}
@@ -20,8 +24,8 @@ input[type=range]{width:min(360px,80vw)}
 #coinHud{top:10px;right:10px}
 .coinIcon{display:inline-block;width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:4px;background:radial-gradient(circle at 32% 25%,#fffde7 0 10%,transparent 11%),radial-gradient(circle,#ffe082 0 40%,#ffca28 41% 58%,#f9a825 59% 75%,#e65100 76%);box-shadow:inset -3px -3px 0 rgba(0,0,0,.22),inset 2px 2px 0 rgba(255,255,255,.45),0 2px 5px rgba(0,0,0,.35);position:relative}
 .coinIcon:after{content:"★";position:absolute;inset:0;display:grid;place-items:center;color:#fff8e1;font-size:11px;text-shadow:1px 1px 0 #e65100}
-.menu{position:fixed;inset:0;z-index:30;display:flex;justify-content:center;align-items:center;color:#fff;text-align:center;background:radial-gradient(circle at 75% 15%,rgba(255,240,120,.45),transparent 20%),linear-gradient(#55bfff,#c9f4ff)}
-.panel{width:min(1220px,calc(100vw - 28px));max-height:calc(100vh - 28px);overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:22px;border-radius:24px;background:rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.25);box-shadow:0 20px 60px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
+.menu{position:fixed;top:0;left:0;right:0;height:100vh;height:100dvh;z-index:30;display:flex;justify-content:center;align-items:center;color:#fff;text-align:center;background:radial-gradient(circle at 75% 15%,rgba(255,240,120,.45),transparent 20%),linear-gradient(#55bfff,#c9f4ff)}
+.panel{width:min(1220px,calc(100vw - 28px));max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:22px;border-radius:24px;background:rgba(0,0,0,.58);border:1px solid rgba(255,255,255,.25);box-shadow:0 20px 60px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
 h1{margin:0 0 8px;font-size:clamp(36px,7vw,76px);text-shadow:4px 4px 0 rgba(0,0,0,.35)}
 h2{margin-top:28px}.subtitle{margin:0 0 18px;opacity:.95;line-height:1.45}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px;margin-top:14px}
@@ -184,10 +188,15 @@ const SKINS=[
 {id:"celestial",name:"Sternenlegende",price:5000,desc:"Legendäre Galaxie-Rüstung.",a:"#111a4a",b:"#050816",skin:"#d6e4ff",hair:"#fff",accent:"#ffd700",style:"celestial"}
 ];
 const player={x:80,y:GROUND_Y-56,oldX:80,oldY:GROUND_Y-56,w:36,h:56,vx:0,vy:0,speed:6.2,jump:16.2,grounded:false,doubleUsed:false,jumpWasPressed:false,facing:1,anim:0,powers:{speed:0,jump:0,double:0,shield:0}};
-function resize(){scale=innerHeight/WORLD_H;visibleW=innerWidth/scale;canvas.width=innerWidth;canvas.height=innerHeight}
+function vpW(){return Math.round((window.visualViewport&&window.visualViewport.width)||innerWidth)}
+function vpH(){return Math.round((window.visualViewport&&window.visualViewport.height)||innerHeight)}
+function resize(){let w=vpW(),h=vpH();scale=h/WORLD_H;visibleW=w/scale;canvas.width=w;canvas.height=h;canvas.style.width=w+"px";canvas.style.height=h+"px"}
 const rotateHint=document.getElementById("rotateHint");
-function checkOrientation(){let coarse=matchMedia("(pointer:coarse)").matches,portrait=innerHeight>innerWidth;rotateHint.style.display=(coarse&&portrait)?"grid":"none"}
-addEventListener("resize",()=>{resize();checkOrientation()});addEventListener("orientationchange",()=>setTimeout(()=>{resize();checkOrientation()},250));resize();checkOrientation();
+function checkOrientation(){let coarse=matchMedia("(pointer:coarse)").matches,portrait=vpH()>vpW();rotateHint.style.display=(coarse&&portrait)?"grid":"none"}
+function relayout(){resize();checkOrientation()}
+addEventListener("resize",relayout);addEventListener("orientationchange",()=>setTimeout(relayout,250));
+if(window.visualViewport){window.visualViewport.addEventListener("resize",relayout);window.visualViewport.addEventListener("scroll",relayout)}
+relayout();
 function rand(s){let x=Math.sin(s)*10000;return x-Math.floor(x)}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
@@ -312,7 +321,7 @@ adminInfiniteCoins.onchange=()=>{if(!admin.unlocked)return;admin.infiniteCoins=a
 adminGhost.onchange=()=>{if(!admin.unlocked)return;admin.ghost=adminGhost.checked;if(!admin.ghost)admin.fly=false};
 function showMenu(){state="menu";mainMenu.style.display="flex";resultMenu.style.display="none";hud.style.display="none";coinHud.style.display="none";stopMusic();renderMenu();startMenuMusic()}
 function showResult(title,text){state="result";hud.style.display="none";coinHud.style.display="none";resultMenu.style.display="flex";resultTitle.textContent=title;resultText.innerHTML=text;nextLevelBtn.disabled=currentLevelIndex>=LEVEL_COUNT-1;nextLevelBtn.textContent=nextLevelBtn.disabled?"Spiel beendet":"Nächstes Level";stopMusic();stopMenuMusic()}
-function startLevel(index){initAudio();currentLevelIndex=index;currentLevel=makeLevel(index);Object.assign(player,{x:80,y:GROUND_Y-player.h,oldX:80,oldY:GROUND_Y-player.h,vx:0,vy:0,grounded:false,doubleUsed:false,jumpWasPressed:false,anim:0,powers:{speed:0,jump:0,double:0,shield:0}});admin.fly=false;checkpointSpawn={x:80,y:GROUND_Y-player.h};lives=MAX_LIVES;score=0;shotsLeft=MAX_SHOTS;reloadTimer=0;shootCooldown=0;elapsed=0;startTime=performance.now();cameraX=0;state="playing";mainMenu.style.display="none";resultMenu.style.display="none";hud.style.display="flex";coinHud.style.display="flex";startMusicForLevel(index);updateHud()}
+function startLevel(index){initAudio();currentLevelIndex=index;currentLevel=makeLevel(index);Object.assign(player,{x:80,y:GROUND_Y-player.h,oldX:80,oldY:GROUND_Y-player.h,vx:0,vy:0,grounded:false,doubleUsed:false,jumpWasPressed:false,anim:0,powers:{speed:0,jump:0,double:0,shield:0}});admin.fly=false;checkpointSpawn={x:80,y:GROUND_Y-player.h};lives=MAX_LIVES;score=0;shotsLeft=MAX_SHOTS;reloadTimer=0;shootCooldown=0;elapsed=0;startTime=performance.now();lastTime=performance.now();acc=0;cameraX=0;state="playing";mainMenu.style.display="none";resultMenu.style.display="none";hud.style.display="flex";coinHud.style.display="flex";startMusicForLevel(index);updateHud()}
 function respawn(){playDeathSound();if(admin.unlocked&&(admin.immortal||admin.ghost)){player.x=checkpointSpawn.x;player.y=checkpointSpawn.y;player.vx=0;player.vy=0;return}if(player.powers.shield>0){player.powers.shield=0;return}lives--;if(lives<=0){playLoseSound();const t=`Du hast Level ${currentLevelIndex+1} nicht geschafft.<br><br>Starte das Level erneut.`;showResult("Game Over",t);document.querySelectorAll('#resultScoreboard').forEach(el=>el.innerHTML="<p class='small'>Speichere …</p>");submitRun(false).then(renderScoreboards);return}player.x=checkpointSpawn.x;player.y=checkpointSpawn.y;player.vx=0;player.vy=0;player.grounded=false;player.doubleUsed=false}
 function finishLevel(){playWinSound();elapsed=performance.now()-startTime;let nb=saveBest(currentLevelIndex,elapsed);showResult(nb?"Neue Bestzeit!":"Level geschafft!",`Zeit: <strong>${formatTime(elapsed)}</strong><br>Punkte: <strong>${score}</strong><br>Wallet-Coins: <strong>${admin.infiniteCoins?"∞":wallet.toLocaleString("de-DE")}</strong><br><br><span id="rankLine">Speichere Bestenliste …</span>`);document.querySelectorAll('#resultScoreboard').forEach(el=>el.innerHTML="<p class='small'>Speichere …</p>");submitRun(true).then(rank=>{const el=document.getElementById("rankLine");if(el)el.innerHTML=(rank?`Dein Platz (Score): <strong>${rank}</strong><br>`:"")+`Beste Zeit Level ${currentLevelIndex+1} (global): <strong>${formatGlobalBest(currentLevelIndex)}</strong>`;renderScoreboards()})}
 document.addEventListener("keydown",e=>{keys[e.key]=true;if([" ","ArrowUp"].includes(e.key))e.preventDefault();if(e.key==="Escape")showMenu();if((e.key==="r"||e.key==="R")&&state==="playing")startLevel(currentLevelIndex);if(admin.unlocked&&state==="playing"){if(e.key==="1")givePower("speed",30000);if(e.key==="2")givePower("jump",30000);if(e.key==="3")givePower("double",30000);if(e.key==="4")givePower("shield",30000);if(e.key==="5")giveAllPowers()}});
@@ -424,10 +433,12 @@ let lvlT=clamp((currentLevel.levelNumber-1)/(LEVEL_COUNT-1),0,1),baseDark=.08+lv
 ctx.fillStyle=`rgba(4,6,22,${Math.min(.78,baseDark+endDark)})`;ctx.fillRect(0,0,visibleW,WORLD_H);
 let vig=ctx.createRadialGradient(visibleW/2,WORLD_H/2,WORLD_H*.25,visibleW/2,WORLD_H/2,WORLD_H*.85);vig.addColorStop(0,"rgba(0,0,0,0)");vig.addColorStop(1,`rgba(0,0,0,${(.18+lvlT*.34).toFixed(3)})`);ctx.fillStyle=vig;ctx.fillRect(0,0,visibleW,WORLD_H);ctx.setTransform(1,0,0,1,0,0)
 }
+const STEP=1000/60;let acc=0;
+function stepGame(s){updateMovingPlatforms(s);updatePowers(s);updatePlayer(s);updateCoins();updateCheckpoints();updatePowerups();updateEnemies(s);updateBullets(s);updateBoss(s);updateFireballs(s);updateFinish()}
 function loop(time){
-let dt=Math.min(40,time-lastTime||16.67);lastTime=time;
-if(state==="playing"){elapsed=performance.now()-startTime;updateMovingPlatforms(dt);updatePowers(dt);updatePlayer(dt);updateCoins();updateCheckpoints();updatePowerups();updateEnemies(dt);updateBullets(dt);updateBoss(dt);updateFireballs(dt);updateFinish();updateCamera();updateHud();drawWorld()}
-else{if(!currentLevel)currentLevel=makeLevel(0);cameraX+=.25;if(cameraX>currentLevel.width-visibleW)cameraX=0;ctx.setTransform(scale,0,0,scale,0,0);ctx.clearRect(0,0,visibleW,WORLD_H);drawBackground();ctx.setTransform(1,0,0,1,0,0)}
+let dt=Math.min(100,time-lastTime||STEP);lastTime=time;
+if(state==="playing"){elapsed=performance.now()-startTime;acc+=dt;let n=0;while(acc>=STEP&&n<6){stepGame(STEP);acc-=STEP;n++}if(acc>STEP)acc=0;updateCamera();updateHud();drawWorld()}
+else{if(!currentLevel)currentLevel=makeLevel(0);cameraX+=.25*(dt/STEP);if(cameraX>currentLevel.width-visibleW)cameraX=0;ctx.setTransform(scale,0,0,scale,0,0);ctx.clearRect(0,0,visibleW,WORLD_H);drawBackground();ctx.setTransform(1,0,0,1,0,0)}
 requestAnimationFrame(loop)
 }
 saveWallet();
